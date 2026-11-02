@@ -23,8 +23,8 @@ export type DrawOptions = {
   sizeCell: number;
   sizeDot: number;
   sizeDotBorderRadius: number;
-  /** data URI for snake head (GitHub avatar) */
-  snakeHeadImage?: string;
+  /** pixel mosaic for snake head (GitHub avatar); safe for SVG-as-img */
+  snakeHeadPixels?: import("./snake").SnakeHeadPixels;
   dark?: {
     colorDots: Record<Color, string>;
     colorEmpty: string;

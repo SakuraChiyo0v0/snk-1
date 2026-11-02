@@ -3,8 +3,9 @@ import * as path from "node:path";
 import { generateSnakeAnimation } from "generate-snake-animation/generateSnakeAnimation";
 import { parseOutputsOption } from "generate-snake-animation/outputsOptions";
 import * as githubAction from "./github-action";
+import { bufferToSnakeHeadPixels } from "./avatarPixels";
 
-const fetchAvatarDataUri = async (username: string, token?: string) => {
+const fetchAvatarPixels = async (username: string, token?: string) => {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "snk-avatar-head",
@@ -22,7 +23,7 @@ const fetchAvatarDataUri = async (username: string, token?: string) => {
     throw new Error(`no avatar_url for ${username}`);
   }
 
-  const avatarUrl = `${user.avatar_url}${user.avatar_url.includes("?") ? "&" : "?"}s=128`;
+  const avatarUrl = `${user.avatar_url}${user.avatar_url.includes("?") ? "&" : "?"}s=64`;
   const imgRes = await fetch(avatarUrl, {
     headers: { "User-Agent": "snk-avatar-head" },
   });
@@ -30,8 +31,8 @@ const fetchAvatarDataUri = async (username: string, token?: string) => {
     throw new Error(`failed to fetch avatar image: ${imgRes.status}`);
   }
   const buf = Buffer.from(await imgRes.arrayBuffer());
-  const contentType = imgRes.headers.get("content-type") || "image/png";
-  return `data:${contentType};base64,${buf.toString("base64")}`;
+  const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+  return bufferToSnakeHeadPixels(buf, contentType, 24);
 };
 
 (async () => {
@@ -52,10 +53,10 @@ const fetchAvatarDataUri = async (username: string, token?: string) => {
 
     const outputs = parseOutputsOption(outputsRaw);
 
-    console.log(`🖼️  fetching GitHub avatar for ${userName}`);
-    const snakeHeadImage = await fetchAvatarDataUri(userName, githubToken);
+    console.log(`🖼️  fetching GitHub avatar pixels for ${userName}`);
+    const snakeHeadPixels = await fetchAvatarPixels(userName, githubToken);
     for (const out of outputs) {
-      if (out) out.drawOptions.snakeHeadImage = snakeHeadImage;
+      if (out) out.drawOptions.snakeHeadPixels = snakeHeadPixels;
     }
 
     const results = await generateSnakeAnimation(
