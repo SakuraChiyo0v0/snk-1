@@ -23,6 +23,8 @@ export type DrawOptions = {
   sizeCell: number;
   sizeDot: number;
   sizeDotBorderRadius: number;
+  /** data URI for snake head (GitHub avatar) */
+  snakeHeadImage?: string;
   dark?: {
     colorDots: Record<Color, string>;
     colorEmpty: string;

@@ -4,6 +4,36 @@ import { generateSnakeAnimation } from "generate-snake-animation/generateSnakeAn
 import { parseOutputsOption } from "generate-snake-animation/outputsOptions";
 import * as githubAction from "./github-action";
 
+const fetchAvatarDataUri = async (username: string, token?: string) => {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "snk-avatar-head",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const userRes = await fetch(`https://api.github.com/users/${username}`, {
+    headers,
+  });
+  if (!userRes.ok) {
+    throw new Error(`failed to fetch user ${username}: ${userRes.status}`);
+  }
+  const user = (await userRes.json()) as { avatar_url?: string };
+  if (!user.avatar_url) {
+    throw new Error(`no avatar_url for ${username}`);
+  }
+
+  const avatarUrl = `${user.avatar_url}${user.avatar_url.includes("?") ? "&" : "?"}s=128`;
+  const imgRes = await fetch(avatarUrl, {
+    headers: { "User-Agent": "snk-avatar-head" },
+  });
+  if (!imgRes.ok) {
+    throw new Error(`failed to fetch avatar image: ${imgRes.status}`);
+  }
+  const buf = Buffer.from(await imgRes.arrayBuffer());
+  const contentType = imgRes.headers.get("content-type") || "image/png";
+  return `data:${contentType};base64,${buf.toString("base64")}`;
+};
+
 (async () => {
   try {
     const userName = githubAction.getInput("github_user_name");
@@ -21,6 +51,12 @@ import * as githubAction from "./github-action";
       .filter(Boolean);
 
     const outputs = parseOutputsOption(outputsRaw);
+
+    console.log(`🖼️  fetching GitHub avatar for ${userName}`);
+    const snakeHeadImage = await fetchAvatarDataUri(userName, githubToken);
+    for (const out of outputs) {
+      if (out) out.drawOptions.snakeHeadImage = snakeHeadImage;
+    }
 
     const results = await generateSnakeAnimation(
       { platform: "github", username: userName, githubToken },

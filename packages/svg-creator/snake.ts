@@ -8,13 +8,15 @@ export type Options = {
   colorSnake: string;
   sizeCell: number;
   sizeDot: number;
+  /** data URI or URL for snake head (e.g. GitHub avatar) */
+  snakeHeadImage?: string;
 };
 
 const lerp = (k: number, a: number, b: number) => (1 - k) * a + k * b;
 
 export const createSnake = (
   chain: Snake[],
-  { sizeCell, sizeDot }: Options,
+  { sizeCell, sizeDot, snakeHeadImage }: Options,
   duration: number,
 ) => {
   const snakeN = chain[0] ? getSnakeLength(chain[0]) : 0;
@@ -24,6 +26,13 @@ export const createSnake = (
   for (const snake of chain) {
     const cells = snakeToCells(snake);
     for (let i = cells.length; i--; ) snakeParts[i].push(cells[i]);
+  }
+
+  const defs: string[] = [];
+  if (snakeHeadImage) {
+    defs.push(
+      `<clipPath id="snake-head-clip" clipPathUnits="objectBoundingBox"><circle cx="0.5" cy="0.5" r="0.5"/></clipPath>`,
+    );
   }
 
   const svgElements = snakeParts.map((_, i, { length }) => {
@@ -37,6 +46,20 @@ export const createSnake = (
     const m = (sizeCell - s) / 2;
 
     const r = Math.min(4.5, (4 * s) / sizeDot);
+
+    // head = index 0; use avatar image when provided
+    if (i === 0 && snakeHeadImage) {
+      return h("image", {
+        class: `s s${i}`,
+        href: snakeHeadImage,
+        x: m.toFixed(1),
+        y: m.toFixed(1),
+        width: s.toFixed(1),
+        height: s.toFixed(1),
+        "clip-path": "url(#snake-head-clip)",
+        preserveAspectRatio: "xMidYMid slice",
+      });
+    }
 
     return h("rect", {
       class: `s s${i}`,
@@ -78,7 +101,13 @@ export const createSnake = (
     }),
   ].flat();
 
-  return { svgElements, styles };
+  return {
+    svgElements: [
+      ...(defs.length ? [`<defs>${defs.join("")}</defs>`] : []),
+      ...svgElements,
+    ],
+    styles,
+  };
 };
 
 const removeInterpolatedPositions = <T extends Point>(arr: T[]) =>

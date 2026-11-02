@@ -1,6 +1,6 @@
 name: "generate-snake-game-from-github-contribution-grid"
-description: "Generates a snake game from a github user contributions grid. Output the animation as svg"
-author: "platane"
+description: "Fork of Platane/snk: snake SVG with GitHub avatar as the snake head"
+author: "SakuraChiyo0v0"
 
 runs:
   using: node24
